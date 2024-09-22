@@ -1,6 +1,9 @@
 package edu.umich.eecs.april.apriltag;
 
+import static android.preference.PreferenceManager.getDefaultSharedPreferences;
+
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -37,7 +40,7 @@ public class ApriltagDetectorActivity extends AppCompatActivity {
     private int has_camera_permissions = 0;
 
     private void verifyPreferences() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sharedPreferences = getPreferences(Context.MODE_PRIVATE);
 
         int nthreads = Integer.parseInt(sharedPreferences.getString("nthreads_value", "0"));
         if (nthreads <= 0) {
@@ -46,7 +49,7 @@ public class ApriltagDetectorActivity extends AppCompatActivity {
                 nproc = 1;
             }
             Log.i(TAG, "available processors: " + nproc);
-            PreferenceManager.getDefaultSharedPreferences(this).edit().putString("nthreads_value", Integer.toString(nproc)).apply();
+            sharedPreferences.edit().putString("nthreads_value", Integer.toString(nproc)).apply();
         }
     }
 
@@ -124,7 +127,7 @@ public class ApriltagDetectorActivity extends AppCompatActivity {
         // DETECTION INIT
         // Re-initialize the Apriltag detector as settings may have changed
         verifyPreferences();
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sharedPreferences = getPreferences(Context.MODE_PRIVATE);
         double decimation = Double.parseDouble(sharedPreferences.getString("decimation_list", "8"));
         double sigma = Double.parseDouble(sharedPreferences.getString("sigma_value", "0"));
         int nthreads = Integer.parseInt(sharedPreferences.getString("nthreads_value", "4"));
@@ -140,7 +143,7 @@ public class ApriltagDetectorActivity extends AppCompatActivity {
         findViewById(R.id.previewFpsTextView).setVisibility(diagnosticsEnabled ? View.VISIBLE : View.INVISIBLE);
         TextView tagFamilyText = (TextView) findViewById(R.id.tagFamily);
         stylizeText(tagFamilyText);
-        tagFamilyText.setText("Tag Family: " + tagFamily.substring(3));
+        tagFamilyText.setText(getResources().getString(R.string.TagFamilyText, tagFamily.substring(3)));
 
         // THREAD INIT
         // Start the detection process on a separate thread
@@ -184,7 +187,7 @@ public class ApriltagDetectorActivity extends AppCompatActivity {
 
             case R.id.reset:
                 // Reset all shared preferences to default values
-                PreferenceManager.getDefaultSharedPreferences(this).edit().clear().commit();
+                getPreferences(Context.MODE_PRIVATE).edit().clear().commit();
 
                 // Restart the camera preview
                 onPause();

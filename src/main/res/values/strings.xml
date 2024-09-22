@@ -68,4 +68,7 @@
         <item>tag25h7</item>
         <item>tag16h5</item>
     </string-array>
+
+<!--    Diagnostics-->
+    <string name="TagFamilyText"> Tag Family: %1$s</string>
 </resources>

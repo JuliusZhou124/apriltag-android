@@ -1,6 +1,7 @@
 package edu.umich.eecs.april.apriltag;
 
 import android.hardware.Camera;
+import android.hardware.camera2.CameraDevice;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.TextView;
@@ -27,7 +28,7 @@ public class CameraPreviewThread extends Thread {
 
     private long mLastRender = System.currentTimeMillis();
     private int mFrameCount = 0;
-    private SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
+    private final SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
             try {

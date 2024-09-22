@@ -1,5 +1,5 @@
 plugins {
-    id 'com.android.application' version '7.4.0'
+    id 'com.android.application' version '8.5.0'
 }
 ext {
     sdkVersion = 24
@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "edu.umich.eecs.april.apriltag"
-        minSdkVersion 14
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 12
         versionName "1.2"
