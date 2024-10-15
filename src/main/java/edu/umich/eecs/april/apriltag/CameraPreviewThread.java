@@ -1,13 +1,35 @@
 package edu.umich.eecs.april.apriltag;
 
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.ImageReader;
+import android.media.MediaRecorder;
 import android.util.Log;
+import android.util.Size;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.camera.camera2.Camera2Config;
+import androidx.camera.camera2.internal.CameraDeviceStateCallbacks;
+import androidx.camera.core.AspectRatio;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.CameraX;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceRequest;
+import androidx.camera.core.impl.CameraCaptureCallback;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -18,9 +40,13 @@ import java.util.List;
  This class also displays a text view with the current frames per second (FPS) of the camera thread.
  </p>
  */
+// Through capture requests we can forward an image to be processed. Instantiated and run from the ApriltagDetectorActivity Class.
+// Looks like I may need to figure out how to get a camera working in the first place as a Main activity ...
 public class CameraPreviewThread extends Thread {
     private static final String TAG = "CameraPreviewThread";
 
+    private String mCameraId;
+    private CameraManager mCameraManager;
     private final SurfaceHolder mSurfaceHolder;
     private final DetectionThread mDetectionThread;
     private Camera mCamera;
@@ -62,12 +88,84 @@ public class CameraPreviewThread extends Thread {
         }
     };
 
+    private final CameraDevice.StateCallback mCameraCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(@NonNull CameraDevice cameraDevice) {
+
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice cameraDevice, int i){
+            // How does android do this again?
+            String errorMsg;
+            switch (i){
+                case ERROR_CAMERA_DEVICE:
+                    errorMsg = "Fatal (device)";
+                    break;
+                case ERROR_CAMERA_DISABLED:
+                    errorMsg = "Device policy";
+                    break;
+                case ERROR_CAMERA_IN_USE:
+                    errorMsg = "Camera in use";
+                    break;
+                case ERROR_CAMERA_SERVICE:
+                    errorMsg = "Fatal (service)";
+                    break;
+                case ERROR_MAX_CAMERAS_IN_USE:
+                    errorMsg = "Maximum cameras in use";
+                    break;
+            }
+        }
+    };
+
     public CameraPreviewThread(SurfaceHolder surfaceHolder, DetectionThread detectionThread, TextView fpsTextView) {
         mSurfaceHolder = surfaceHolder;
         mFpsTextView = fpsTextView;
         mDetectionThread = detectionThread;
 
         mSurfaceHolder.addCallback(mCallback);
+    }
+
+
+    private void setupCamera() {
+        try {
+            String[] cameraIds = mCameraManager.getCameraIdList();
+
+            for (String id: cameraIds) {
+                CameraCharacteristics cameraCharacteristics = mCameraManager.getCameraCharacteristics(id);
+
+                //If we want to choose the rear facing camera instead of the front facing one
+                if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
+                    continue;
+                }
+
+                StreamConfigurationMap streamConfigurationMap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+                if (streamConfigurationMap != null) {
+                    //previewSize = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG).maxByOrNull { it.height * it.width };
+
+                    Size previewSize = Collections.max(Arrays.asList(cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG)), (size1, size2) -> Integer.compare(size1.getHeight() * size1.getWidth(), size2.getHeight() * size2.getWidth()));
+//                    Size previewSize = Arrays.stream(
+//                                    cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG))
+//                            .max((size1, size2) -> Integer.compare(size1.getHeight() * size1.getWidth(), size2.getHeight() * size2.getWidth()))
+    //                            .orElse(null);
+                    Size videoSize = Collections.max(Arrays.asList(cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(MediaRecorder.class)), (size1, size2) -> Integer.compare(size1.getHeight() * size1.getWidth(), size2.getHeight() * size2.getWidth()));
+
+                   //         cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(MediaRecorder.class).maxByOrNull { it.height * it.width }!!;
+                    ImageReader imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 1);
+//                    imageReader.setOnImageAvailableListener(onImageAvailableListener, backgroundHandler);
+                }
+                mCameraId = id;
+            }
+        }
+        catch (Exception e) {
+            System.out.println(e.toString());
+        }
     }
 
     public void destroy() {

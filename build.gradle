@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application' version '8.5.0'
+    id "com.diffplug.spotless" version "7.0.0.BETA2"
 }
 ext {
     sdkVersion = 24
@@ -29,7 +30,33 @@ android {
             path "CMakeLists.txt"
         }
     }
+}
 
+spotless {
+    // optional: limit format enforcement to just the files changed by this feature branch
+    ratchetFrom 'origin/main'
+
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.gradle', '.gitattributes', '.gitignore'
+
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithTabs() // or spaces. Takes an integer argument if you don't like 4
+        endWithNewline()
+    }
+    java {
+        // don't need to set target, it is inferred from java
+
+        // apply a specific flavor of google-java-format
+        googleJavaFormat('1.8').aosp().reflowLongStrings().skipJavadocFormatting()
+        // fix formatting of type annotations
+        formatAnnotations()
+        // make sure every file has the following copyright header.
+        // optionally, Spotless can set copyright years by digging
+        // through git history (see "license" section below)
+        licenseHeader '/* (C)2024 */'
+    }
 }
 
 dependencies {
@@ -37,4 +64,13 @@ dependencies {
     implementation 'junit:junit:4.12'
     implementation 'com.android.support:appcompat-v7:24.2.0'
     implementation 'com.android.support:support-v4:24.2.0'
+
+    def camerax_version = "1.2.2"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-video:${camerax_version}"
+
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation "androidx.camera:camera-extensions:${camerax_version}"
 }
